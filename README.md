@@ -1,7 +1,8 @@
-## 🎬 Mission Overview (Video Preview)
+## 🎬 Mission Overview LINEA ANNOUNCEMENT https://x.com/LineaBuild/status/1983999881716076718 > **Deploy on Linea. Climb the ranks.  
+> Get Rewarded.**
+>
+> *Linea Exponent is coming November 5th.*
 
-<video src="https://github.com/mikeminer/lineavoyage/raw/refs/heads/main/Linea.eth_-_Deploy_on_Linea._Climb_the_ranks._Get_Rewarded._Linea_Exponent_is_co..._GH9c83.mp4" width="640" controls>
-</video>
 
 
 # 🚀 Linea Voyage — Mission Control
