@@ -224,7 +224,7 @@
     if(!allowed){
       banner.style.display = 'flex';
       banner.className = 'banner warn';
-      banner.innerHTML = `<div style="flex:1">Access locked — you must hold <strong>The Citadel Spaceship</strong> NFT on Base to use this dApp.</div>
+      banner.innerHTML = `<div style="flex:1">You must hold <strong>The Citadel Spaceship</strong> NFT on Base to use this dApp.</div>
                           <div><a id="openseaLink" href="${OPENSEA_URL}" target="_blank" rel="noopener">Buy a ship on OpenSea ↗</a></div>`;
       // make the (disabled) start button open opensea as helpful shortcut:
       startBtn.onclick = () => { window.open(OPENSEA_URL, '_blank'); };
