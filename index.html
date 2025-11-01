@@ -21,7 +21,7 @@
       linear-gradient(180deg,var(--space1),var(--space2));
     display:flex; align-items:center; justify-content:center; padding:28px;
   }
-  .shell{ width:min(1200px,96vw); border-radius:18px; padding:20px; background:linear-gradient(180deg, rgba(56,225,225,.06), rgba(0,0,0,.06)); border:1px solid rgba(56,225,225,.18); box-shadow:0 40px 80px rgba(0,0,0,.6); }
+  .shell{ width:min(1200px,96vw); border-radius:18px; padding:20px; background:linear-gradient(180deg, rgba(56,225,225,.06), rgba(0,0,0,.06)); border:1px solid rgba(56,225,225,.18); box-shadow: 0 40px 80px rgba(0,0,0,.6); }
   header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
   .brand{ display:flex; gap:12px; align-items:center; }
   .logo{ width:56px; height:56px; border-radius:14px; background:linear-gradient(180deg,#8affff,#2ae3e3); display:flex; align-items:center; justify-content:center; font-weight:900; color:#062026; box-shadow: 0 8px 22px rgba(42,227,227,0.25); }
@@ -204,9 +204,25 @@
   const $ = id => document.getElementById(id);
   const connectBtn = $('connectBtn'), startBtn = $('startBtn'), stopBtn = $('stopBtn'), downloadCsv = $('downloadCsv');
   const logEl = $('log'), connectedEl = $('connected'), accountEl = $('account');
+
   let provider, signer, walletAddress = null;
   let STOP = false;
   let results = [];
+
+  // --- Badges config (declare EARLY to avoid TDZ) ---
+  const BADGES = [
+    { title:'CAPTAIN OF THE VOID', emoji:'🪐👨‍🚀', msg:'Every tx is a tiny step for gas, but a giant leap for your private chain.' },
+    { title:'WARP NAVIGATOR', emoji:'🚀🧭', msg:'You bent spacetime and the mempool said “nice.”' },
+    { title:'SEQUENCER SORCERER', emoji:'✨⚙️', msg:'Blocks obey your will. Mostly.' },
+    { title:'THRUST MASTER', emoji:'🛸🔥', msg:'More throughput than a caffeine-fueled validator.' },
+    { title:'COSMIC OPTIMIZER', emoji:'🌌🛠️', msg:'You turned gas into stardust-efficient art.' },
+    { title:'GRAVITY BREAKER', emoji:'🛰️🪄', msg:'Latency bowed. Inclusion rose. You prevailed.' },
+    { title:'ASTRO ARCHITECT', emoji:'🏗️🪐', msg:'Contracts align like constellations of code.' },
+    { title:'NEBULA NAV', emoji:'☁️🧮', msg:'Through clouds of transactions, you kept course.' },
+    { title:'QUANTUM TIPSTER', emoji:'🔬💸', msg:'Heisenberg called—your tips changed the outcome.' },
+    { title:'VOYAGE LEGEND', emoji:'🏴‍☠️⭐', msg:'From L1 myths to L2 glory. You made history.' }
+  ];
+  const milestonesShown = new Set();
 
   // Prefill your Linea Factory address
   window.addEventListener('DOMContentLoaded', ()=>{
@@ -226,14 +242,10 @@
   function setConnected(ok, addr){ connectedEl.textContent = ok ? 'Yes' : 'No'; accountEl.textContent = addr || '—'; }
 
   async function assertLinea(p){
-    // Ensure Linea mainnet (59144) when using public Linea; skip if custom RPC provided and you want to allow it.
     try{
       const net = await p.getNetwork();
       if (net.chainId !== 59144n) throw new Error("Please switch to Linea (chainId 59144).");
-    }catch(e){
-      // If local/private RPC: comment this out to allow any chain ID
-      throw e;
-    }
+    }catch(e){ throw e; }
   }
 
   connectBtn.onclick = async () => {
@@ -262,7 +274,7 @@
         appendLog('Connected via Private Key: ' + walletAddress + ' @ ' + rpc);
       }
       await preloadBadgesIfPossible();
-      updateProgressBar( getSavedProgress() ); // reflect restored state on the bar
+      updateProgressBar( getSavedProgress() );
     } catch(e){
       appendLog('Connection error: ' + (e.message || e));
       setConnected(false, null);
@@ -282,21 +294,6 @@
     const contract = new ethers.Contract(factoryAddr, FACTORY_ABI, signer);
     return await contract.deployChild({ value: valueWei });
   }
-
-  // Badges
-  const BADGES = [
-    { title:'CAPTAIN OF THE VOID', emoji:'🪐👨‍🚀', msg:'Every tx is a tiny step for gas, but a giant leap for your private chain.' },
-    { title:'WARP NAVIGATOR', emoji:'🚀🧭', msg:'You bent spacetime and the mempool said “nice.”' },
-    { title:'SEQUENCER SORCERER', emoji:'✨⚙️', msg:'Blocks obey your will. Mostly.' },
-    { title:'THRUST MASTER', emoji:'🛸🔥', msg:'More throughput than a caffeine-fueled validator.' },
-    { title:'COSMIC OPTIMIZER', emoji:'🌌🛠️', msg:'You turned gas into stardust-efficient art.' },
-    { title:'GRAVITY BREAKER', emoji:'🛰️🪄', msg:'Latency bowed. Inclusion rose. You prevailed.' },
-    { title:'ASTRO ARCHITECT', emoji:'🏗️🪐', msg:'Contracts align like constellations of code.' },
-    { title:'NEBULA NAV', emoji:'☁️🧮', msg:'Through clouds of transactions, you kept course.' },
-    { title:'QUANTUM TIPSTER', emoji:'🔬💸', msg:'Heisenberg called—your tips changed the outcome.' },
-    { title:'VOYAGE LEGEND', emoji:'🏴‍☠️⭐', msg:'From L1 myths to L2 glory. You made history.' }
-  ];
-  const milestonesShown = new Set();
 
   function showBadge(title, msg){
     const dock = document.getElementById('badgeDock');
