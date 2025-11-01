@@ -209,7 +209,7 @@
   let STOP = false;
   let results = [];
 
-  // --- Badges config (declare EARLY to avoid TDZ) ---
+  // --- Badges config declared EARLY ---
   const BADGES = [
     { title:'CAPTAIN OF THE VOID', emoji:'🪐👨‍🚀', msg:'Every tx is a tiny step for gas, but a giant leap for your private chain.' },
     { title:'WARP NAVIGATOR', emoji:'🚀🧭', msg:'You bent spacetime and the mempool said “nice.”' },
@@ -223,6 +223,15 @@
     { title:'VOYAGE LEGEND', emoji:'🏴‍☠️⭐', msg:'From L1 myths to L2 glory. You made history.' }
   ];
   const milestonesShown = new Set();
+
+  // --- ABI & TOPIC declared EARLIEST to avoid TDZ anywhere ---
+  const FACTORY_ABI = [
+    'function deployChild() external payable returns (address)',
+    'event ChildDeployed(address indexed deployer, address child, uint256 value)'
+  ];
+  const IFACE = new ethers.Interface(FACTORY_ABI);
+  const EV = IFACE.getEvent("ChildDeployed");
+  const TOPIC_CHILD_DEPLOYED = IFACE.getEventTopic(EV);
 
   // Prefill your Linea Factory address
   window.addEventListener('DOMContentLoaded', ()=>{
@@ -266,8 +275,7 @@
         if(!rpc) throw new Error('Please provide RPC URL for Private Key mode');
         if(!pk) throw new Error('Please provide a private key (local testing only)');
         provider = new ethers.StaticJsonRpcProvider(rpc);
-        // Optionally enforce Linea here too:
-        // await assertLinea(provider);
+        // await assertLinea(provider); // enable if you want to enforce Linea here too
         signer = new ethers.Wallet(pk, provider);
         walletAddress = await signer.getAddress();
         setConnected(true, walletAddress);
@@ -280,15 +288,6 @@
       setConnected(false, null);
     }
   };
-
-  // ABI & topics
-  const FACTORY_ABI = [
-    'function deployChild() external payable returns (address)',
-    'event ChildDeployed(address indexed deployer, address child, uint256 value)'
-  ];
-  const IFACE = new ethers.Interface(FACTORY_ABI);
-  const EV = IFACE.getEvent("ChildDeployed");
-  const TOPIC_CHILD_DEPLOYED = IFACE.getEventTopic(EV);
 
   async function sendDeploy(factoryAddr, valueWei){
     const contract = new ethers.Contract(factoryAddr, FACTORY_ABI, signer);
@@ -360,6 +359,11 @@
       const factory = $('factoryAddress').value.trim();
       if(!factory || !walletAddress || !provider) return;
 
+      // Safety: recompute topic if not present for any reason
+      const topicEmitted = (typeof TOPIC_CHILD_DEPLOYED !== 'undefined' && TOPIC_CHILD_DEPLOYED)
+        ? TOPIC_CHILD_DEPLOYED
+        : (new ethers.Interface(FACTORY_ABI)).getEventTopic((new ethers.Interface(FACTORY_ABI)).getEvent("ChildDeployed"));
+
       let best = 0;
       try{
         const key = storageKey(factory, walletAddress);
@@ -368,7 +372,7 @@
       }catch(_){}
 
       const topic1 = ethers.zeroPadValue(walletAddress, 32);
-      const logs = await provider.getLogs({ address: factory, fromBlock: 0, toBlock: 'latest', topics: [TOPIC_CHILD_DEPLOYED, topic1] });
+      const logs = await provider.getLogs({ address: factory, fromBlock: 0, toBlock: 'latest', topics: [topicEmitted, topic1] });
       const historical = logs.length;
       const totalSucc = Math.max(best, historical);
 
