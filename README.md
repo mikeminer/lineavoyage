@@ -1,4 +1,4 @@
-## 🎬 Mission Overview LINEA ANNOUNCEMENT https://x.com/LineaBuild/status/1983999881716076718 >
+## 🎬 Mission Overview LINEA ANNOUNCEMENT https://x.com/LineaBuild/status/1983999881716076718 
 **Deploy on Linea. Climb the ranks.  
 > Get Rewarded.**
 >
