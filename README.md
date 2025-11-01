@@ -1,4 +1,5 @@
-## 🎬 Mission Overview LINEA ANNOUNCEMENT https://x.com/LineaBuild/status/1983999881716076718 > **Deploy on Linea. Climb the ranks.  
+## 🎬 Mission Overview LINEA ANNOUNCEMENT https://x.com/LineaBuild/status/1983999881716076718 >
+**Deploy on Linea. Climb the ranks.  
 > Get Rewarded.**
 >
 > *Linea Exponent is coming November 5th.*
