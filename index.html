@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Linea Voyage — Mission Control</title>
+<style>
+  :root{
+    --space1:#06131a; --space2:#0b2430;
+    --card:#0d2a33; --glass:rgba(255,255,255,0.04);
+    --accent:#38e1e1; --accent2:#9ff6f6;
+    --muted:#a9f0f0; --text:#eaffff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    color:var(--text);
+    background:
+      radial-gradient(900px 600px at 10% 10%, rgba(56,225,225,.10), transparent 40%),
+      radial-gradient(900px 600px at 90% 90%, rgba(56,225,225,.06), transparent 40%),
+      linear-gradient(180deg,var(--space1),var(--space2));
+    display:flex; align-items:center; justify-content:center; padding:28px;
+  }
+  .shell{ width:min(1200px,96vw); border-radius:18px; padding:20px; background:linear-gradient(180deg, rgba(56,225,225,.06), rgba(0,0,0,.06)); border:1px solid rgba(56,225,225,.18); box-shadow:0 40px 80px rgba(0,0,0,.6); }
+  header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
+  .brand{ display:flex; gap:12px; align-items:center; }
+  .logo{ width:56px; height:56px; border-radius:14px; background:linear-gradient(180deg,#8affff,#2ae3e3); display:flex; align-items:center; justify-content:center; font-weight:900; color:#062026; box-shadow: 0 8px 22px rgba(42,227,227,0.25); }
+  h1{ margin:0; font-size:22px; letter-spacing:.4px; }
+  .tagline{ color:var(--muted); font-size:13px; margin-top:4px; }
+  .top-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .pill{ background:rgba(56,225,225,0.12); padding:8px 12px; border-radius:999px; border:1px solid rgba(56,225,225,0.22); color:var(--accent2); font-weight:700; font-size:12px; }
+
+  .content{ display:grid; grid-template-columns: 1fr 420px; gap:16px; margin-top:16px; }
+  .panel{ background:var(--card); border-radius:14px; padding:14px; border:1px solid rgba(255,255,255,0.05); }
+  label{ display:block; color:var(--muted); font-size:13px; margin-bottom:6px; }
+  input[type=text], input[type=number], select{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.07); background:transparent; color:var(--text); font-size:14px; }
+  .controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  button{ cursor:pointer; border:none; padding:10px 14px; border-radius:12px; font-weight:900; background:linear-gradient(180deg,var(--accent),#23c9c9); color:#042026; box-shadow:0 10px 30px rgba(35,201,201,0.25); }
+  button.ghost{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.07); box-shadow:none; }
+  .big{ padding:14px 18px; font-size:16px; border-radius:14px; }
+  .log{ height:420px; overflow:auto; padding:12px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:13px; color:#dffbfb; }
+  .metrics{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:12px; }
+  .stat{ padding:12px; border-radius:12px; background:var(--glass); border:1px solid rgba(255,255,255,0.06); }
+  .small{ font-size:12px; color:var(--muted); }
+  .note{ font-size:12px; color:#c8ffff; margin-top:8px; }
+  footer{ margin-top:12px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+
+  /* Badge dock */
+  .badgeDock{ position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column; gap:10px; z-index:9999; }
+  .badge{
+    background:linear-gradient(180deg, rgba(56,225,225,.22), rgba(0,0,0,.35));
+    border:1px solid rgba(56,225,225,.45);
+    color:#eaffff; padding:10px 14px; border-radius:14px; min-width:260px;
+    box-shadow:0 10px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    animation:popIn .5s ease, fadeOut 6.5s ease 4.5s forwards;
+    backdrop-filter: blur(8px);
+  }
+  .badge .title{ font-weight:900; letter-spacing:.3px; margin-bottom:4px; color:#9ff6f6; }
+  .badge .msg{ font-size:13px; color:#c8ffff; }
+  @keyframes popIn{ from{ transform: translateY(12px) scale(.98); opacity:0 } to{ transform: translateY(0) scale(1); opacity:1 } }
+  @keyframes fadeOut{ to{ opacity:0; transform: translateY(6px) } }
+
+  /* Confetti starburst */
+  .confetti{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:9998; }
+  .confetti .star{ position:absolute; font-size:14px; color:#9ff6f6; opacity:0.95; will-change: transform, opacity; animation: fall 1200ms ease-out forwards, spin 1200ms linear forwards; }
+  @keyframes fall{ from{ transform: translate(var(--x), var(--y)) scale(1) } to{ transform: translate(var(--tx), var(--ty)) scale(0.9); opacity:0 } }
+  @keyframes spin{ from{ rotate:0deg } to{ rotate:360deg } }
+
+  /* Progress bar + rocket */
+  .progressWrap{ margin:10px 0 6px; background:var(--glass); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:8px; }
+  .progressLabel{ display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .progressTrack{ height:10px; border-radius:999px; background:rgba(56,225,225,.14); overflow:hidden; position:relative; }
+  .progressBar{ height:100%; width:0%; background:linear-gradient(90deg, var(--accent), #23c9c9); box-shadow:0 0 14px rgba(56,225,225,.45); transition: width .35s ease; }
+  .progressRocket{ position:absolute; top:-8px; left:0; font-size:14px; filter: drop-shadow(0 0 6px rgba(56,225,225,.65)); transition: left .35s ease; pointer-events:none; }
+  .progressHint{ font-size:11px; color:#c8ffff; opacity:.85; margin-top:4px; }
+
+  @media (max-width:980px){ .content{ grid-template-columns:1fr; } .log{ height:260px; } }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="logo">LV</div>
+        <div>
+          <h1>Linea Voyage — Mission Control</h1>
+          <div class="tagline">Exploring cryptospace with cheerful benchmarks and cosmic cocktails 🚀🪐</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="pill">Theme: Linea Voyage</div>
+        <div class="pill">Mode: Private Testnet / Linea</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Left: controls -->
+      <div class="panel">
+        <h3 style="margin:0 0 8px">Launch a Round — Warp the Bar 🍹🚀</h3>
+        <div class="small">Simulate a burst of on-chain orders to stress-test your starbase. Controlled thrust, zero on-chain self-replication.</div>
+
+        <div style="height:12px"></div>
+        <label>Backroom Factory (Dispenser) — contract address</label>
+        <input id="factoryAddress" placeholder="0x... (VoyageFactory with deployChild)"/>
+
+        <div style="height:8px"></div>
+        <label>Connection</label>
+        <div class="controls">
+          <select id="signerMode">
+            <option value="wallet">Browser Wallet (MetaMask / Rabby)</option>
+            <option value="pk">Private Key + RPC (local only)</option>
+          </select>
+          <input id="rpcUrl" placeholder="RPC (e.g. https://rpc.linea.build or http://127.0.0.1:8545)" style="width:48%"/>
+        </div>
+
+        <div style="height:8px"></div>
+        <input id="privateKey" placeholder="Private key (0x...) — keep it local & safe" style="display:none"/>
+
+        <hr style="opacity:.1; margin:12px 0"/>
+
+        <label>Flight Plan</label>
+        <div class="controls" style="margin-bottom:8px">
+          <div style="flex:1">
+            <div class="small"># of Orders</div>
+            <input id="count" type="number" value="50" min="1"/>
+          </div>
+          <div style="width:160px">
+            <div class="small">ETH per Order</div>
+            <input id="valueEth" type="text" value="0.000"/>
+          </div>
+          <div style="width:150px">
+            <div class="small">Delay (ms) — sequential</div>
+            <input id="delayMs" type="number" value="50" min="0"/>
+          </div>
+          <div style="width:150px">
+            <div class="small">Mode</div>
+            <select id="parallel"><option value="0">Sequential</option><option value="1">Parallel</option></select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <button id="connectBtn">Connect</button>
+          <button id="startBtn" class="ghost big">Launch Sequence</button>
+          <button id="stopBtn" class="ghost" disabled>Abort</button>
+          <button id="downloadCsv" class="ghost">Download CSV</button>
+        </div>
+
+        <div class="note">⚠️ Use on infrastructure you control. This triggers <code>deployChild()</code> on your Factory and forwards ETH if set — it does <b>not</b> auto-replicate on-chain.</div>
+      </div>
+
+      <!-- Right: telemetry -->
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>Telemetry</strong>
+            <div class="small">Watch orders, timings and gas as you cruise the stars.</div>
+          </div>
+          <div class="small">Elapsed: <span id="elapsed">0ms</span></div>
+        </div>
+
+        <div style="height:8px"></div>
+        <div class="log" id="log" aria-live="polite"></div>
+
+        <!-- Progress to next badge -->
+        <div class="progressWrap" id="progressWrap">
+          <div class="progressLabel">
+            <span>Next badge progress</span>
+            <span id="progressText">0 / 50</span>
+          </div>
+          <div class="progressTrack">
+            <div class="progressBar" id="progressBar"></div>
+            <div class="progressRocket" id="progressRocket">🚀</div>
+          </div>
+          <div class="progressHint" id="progressHint">Earn a new rank every 50 successful orders. Warp speed ahead!</div>
+        </div>
+
+        <div class="metrics">
+          <div class="stat"><div class="small">Connected</div><div id="connected" style="font-weight:900">No</div></div>
+          <div class="stat"><div class="small">Account</div><div id="account" style="font-weight:900">—</div></div>
+          <div class="stat"><div class="small">Total tx</div><div id="m_total">0</div></div>
+          <div class="stat"><div class="small">Success</div><div id="m_success">0</div></div>
+          <div class="stat"><div class="small">Failed</div><div id="m_failed">0</div></div>
+          <div class="stat"><div class="small">Total gas</div><div id="m_gas">0</div></div>
+        </div>
+
+        <div style="height:8px"></div>
+        <div class="small">Tip: start with one order to validate your Factory & params before going full warp.</div>
+      </div>
+    </div>
+
+    <footer>
+      <div>© Linea Voyage — Mission Control • For private testing & research</div>
+      <div class="small">Events power badges & persistence. ABI expects <code>deployChild()</code> payable.</div>
+    </footer>
+  </div>
+
+  <!-- Badge Dock -->
+  <div id="badgeDock" class="badgeDock" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const connectBtn = $('connectBtn'), startBtn = $('startBtn'), stopBtn = $('stopBtn'), downloadCsv = $('downloadCsv');
+  const logEl = $('log'), connectedEl = $('connected'), accountEl = $('account');
+  let provider, signer, walletAddress = null;
+  let STOP = false;
+  let results = [];
+
+  // Prefill your Linea Factory address
+  window.addEventListener('DOMContentLoaded', ()=>{
+    const addr = "0x5cbf834Ba1e687560ce0564d684cd8Ecd5373B72";
+    const el = $('factoryAddress');
+    if(el && !el.value) el.value = addr;
+  });
+
+  // Toggle private key field
+  $('signerMode').addEventListener('change', ()=>{ $('privateKey').style.display = $('signerMode').value === 'pk' ? 'block' : 'none'; });
+
+  function appendLog(msg){
+    const el = document.createElement('div');
+    el.textContent = `[${(new Date()).toISOString()}] ${msg}`;
+    logEl.prepend(el);
+  }
+  function setConnected(ok, addr){ connectedEl.textContent = ok ? 'Yes' : 'No'; accountEl.textContent = addr || '—'; }
+
+  async function assertLinea(p){
+    // Ensure Linea mainnet (59144) when using public Linea; skip if custom RPC provided and you want to allow it.
+    try{
+      const net = await p.getNetwork();
+      if (net.chainId !== 59144n) throw new Error("Please switch to Linea (chainId 59144).");
+    }catch(e){
+      // If local/private RPC: comment this out to allow any chain ID
+      throw e;
+    }
+  }
+
+  connectBtn.onclick = async () => {
+    try {
+      const mode = $('signerMode').value;
+      if(mode === 'wallet'){
+        if(!window.ethereum) throw new Error('No provider in window.ethereum — install MetaMask or Rabby');
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send('eth_requestAccounts', []);
+        await assertLinea(provider);
+        signer = await provider.getSigner();
+        walletAddress = await signer.getAddress();
+        setConnected(true, walletAddress);
+        appendLog('Connected via wallet: ' + walletAddress);
+      } else {
+        const rpc = $('rpcUrl').value.trim();
+        const pk = $('privateKey').value.trim();
+        if(!rpc) throw new Error('Please provide RPC URL for Private Key mode');
+        if(!pk) throw new Error('Please provide a private key (local testing only)');
+        provider = new ethers.StaticJsonRpcProvider(rpc);
+        // Optionally enforce Linea here too:
+        // await assertLinea(provider);
+        signer = new ethers.Wallet(pk, provider);
+        walletAddress = await signer.getAddress();
+        setConnected(true, walletAddress);
+        appendLog('Connected via Private Key: ' + walletAddress + ' @ ' + rpc);
+      }
+      await preloadBadgesIfPossible();
+      updateProgressBar( getSavedProgress() ); // reflect restored state on the bar
+    } catch(e){
+      appendLog('Connection error: ' + (e.message || e));
+      setConnected(false, null);
+    }
+  };
+
+  // ABI & topics
+  const FACTORY_ABI = [
+    'function deployChild() external payable returns (address)',
+    'event ChildDeployed(address indexed deployer, address child, uint256 value)'
+  ];
+  const IFACE = new ethers.Interface(FACTORY_ABI);
+  const EV = IFACE.getEvent("ChildDeployed");
+  const TOPIC_CHILD_DEPLOYED = IFACE.getEventTopic(EV);
+
+  async function sendDeploy(factoryAddr, valueWei){
+    const contract = new ethers.Contract(factoryAddr, FACTORY_ABI, signer);
+    return await contract.deployChild({ value: valueWei });
+  }
+
+  // Badges
+  const BADGES = [
+    { title:'CAPTAIN OF THE VOID', emoji:'🪐👨‍🚀', msg:'Every tx is a tiny step for gas, but a giant leap for your private chain.' },
+    { title:'WARP NAVIGATOR', emoji:'🚀🧭', msg:'You bent spacetime and the mempool said “nice.”' },
+    { title:'SEQUENCER SORCERER', emoji:'✨⚙️', msg:'Blocks obey your will. Mostly.' },
+    { title:'THRUST MASTER', emoji:'🛸🔥', msg:'More throughput than a caffeine-fueled validator.' },
+    { title:'COSMIC OPTIMIZER', emoji:'🌌🛠️', msg:'You turned gas into stardust-efficient art.' },
+    { title:'GRAVITY BREAKER', emoji:'🛰️🪄', msg:'Latency bowed. Inclusion rose. You prevailed.' },
+    { title:'ASTRO ARCHITECT', emoji:'🏗️🪐', msg:'Contracts align like constellations of code.' },
+    { title:'NEBULA NAV', emoji:'☁️🧮', msg:'Through clouds of transactions, you kept course.' },
+    { title:'QUANTUM TIPSTER', emoji:'🔬💸', msg:'Heisenberg called—your tips changed the outcome.' },
+    { title:'VOYAGE LEGEND', emoji:'🏴‍☠️⭐', msg:'From L1 myths to L2 glory. You made history.' }
+  ];
+  const milestonesShown = new Set();
+
+  function showBadge(title, msg){
+    const dock = document.getElementById('badgeDock');
+    if(!dock) return;
+    const el = document.createElement('div');
+    el.className = 'badge';
+    el.innerHTML = `<div class="title">${title}</div><div class="msg">${msg}</div>`;
+    dock.appendChild(el);
+    setTimeout(()=>{ try{ dock.removeChild(el); }catch(_){} }, 8000);
+  }
+  function confettiBurst(){
+    const layer = document.createElement('div');
+    layer.className = 'confetti';
+    document.body.appendChild(layer);
+    const N = 60;
+    const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    for(let i=0;i<N;i++){
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.textContent = '✦';
+      const x = (vw/2); const y = (vh - 80);
+      const angle = (Math.PI * 2) * (i / N);
+      const dist = 120 + Math.random()*220;
+      const tx = x + Math.cos(angle) * dist;
+      const ty = y - Math.sin(angle) * dist - (Math.random()*80);
+      star.style.setProperty('--x', x+'px');
+      star.style.setProperty('--y', y+'px');
+      star.style.setProperty('--tx', tx+'px');
+      star.style.setProperty('--ty', ty+'px');
+      star.style.left = x+'px';
+      star.style.top = y+'px';
+      star.style.fontSize = (12 + Math.random()*10)+'px';
+      layer.appendChild(star);
+    }
+    setTimeout(()=>{ try{ document.body.removeChild(layer); }catch(_){} }, 1300);
+  }
+
+  function storageKey(factory, addr){ return `lv_badges_${(factory||'').toLowerCase()}_${(addr||'').toLowerCase()}`; }
+  function getSavedProgress(){
+    try{
+      const factory = $('factoryAddress').value.trim();
+      if(!factory || !walletAddress) return 0;
+      const key = storageKey(factory, walletAddress);
+      const saved = JSON.parse(localStorage.getItem(key) || '0');
+      return Number.isFinite(saved) ? saved : 0;
+    }catch(_){ return 0; }
+  }
+  function persistProgress(){
+    try{
+      const factory = $('factoryAddress').value.trim();
+      if(!factory || !walletAddress) return;
+      const succ = results.filter(r=>r.ok).length;
+      const key = storageKey(factory, walletAddress);
+      const current = JSON.parse(localStorage.getItem(key) || '0');
+      const base = Number.isFinite(current) ? current : 0;
+      const best = Math.max(base, succ);
+      localStorage.setItem(key, JSON.stringify(best));
+    }catch(_){}
+  }
+
+  async function preloadBadgesIfPossible(){
+    try{
+      const factory = $('factoryAddress').value.trim();
+      if(!factory || !walletAddress || !provider) return;
+
+      let best = 0;
+      try{
+        const key = storageKey(factory, walletAddress);
+        const saved = JSON.parse(localStorage.getItem(key) || '0');
+        if(Number.isFinite(saved)) best = saved;
+      }catch(_){}
+
+      const topic1 = ethers.zeroPadValue(walletAddress, 32);
+      const logs = await provider.getLogs({ address: factory, fromBlock: 0, toBlock: 'latest', topics: [TOPIC_CHILD_DEPLOYED, topic1] });
+      const historical = logs.length;
+      const totalSucc = Math.max(best, historical);
+
+      for(let m=1; m<=10; m++){
+        if(totalSucc >= m*50) milestonesShown.add(m);
+      }
+
+      const key = storageKey(factory, walletAddress);
+      localStorage.setItem(key, JSON.stringify(totalSucc));
+
+      if(totalSucc >= 50){
+        showBadge('🛰️ Progress Restored', `Detected ${totalSucc} successful orders — badges synced.`);
+      }
+    }catch(e){ appendLog('Preload badges failed: ' + (e.message||e)); }
+  }
+
+  function tryUnlockBadge(successCount){
+    if(successCount === 0) return;
+    const milestone = Math.floor(successCount / 50);
+    if(milestone >= 1 && milestone <= 10 && successCount % 50 === 0 && !milestonesShown.has(milestone)){
+      milestonesShown.add(milestone);
+      const b = BADGES[milestone-1] || BADGES[BADGES.length-1];
+      showBadge(`${b.emoji} ${b.title}`, b.msg);
+      confettiBurst();
+      persistProgress();
+    }
+  }
+
+  function updateProgressBar(successCount){
+    const pb = $('progressBar');
+    const pt = $('progressText');
+    const hint = $('progressHint');
+    const rocket = $('progressRocket');
+    if(!pb || !pt) return;
+    const cap = 50;
+    const cycles = Math.floor(successCount / cap);
+    const within = successCount % cap;
+    const pct = Math.min(100, Math.round((within / cap) * 100));
+    pb.style.width = pct + '%';
+    pt.textContent = `${within} / ${cap}`;
+    if(rocket){
+      const offsetPx = 10;
+      rocket.style.left = `calc(${pct}% - ${offsetPx}px)`;
+    }
+    const maxBadges = BADGES.length * cap; // 500
+    if(successCount >= maxBadges){
+      hint.textContent = "Max rank achieved — you’re a Voyage Legend!";
+    } else {
+      const nextTitle = BADGES[Math.min(cycles, BADGES.length-1)].title;
+      hint.textContent = `Next up: ${nextTitle} at ${(cycles+1)*cap} successes.`;
+    }
+  }
+
+  // Main runner
+  startBtn.onclick = async () => {
+    STOP = false;
+    results = [];
+    $('m_total').textContent = '0'; $('m_success').textContent = '0'; $('m_failed').textContent = '0'; $('m_gas').textContent = '0';
+    updateProgressBar( getSavedProgress() );
+
+    const factory = $('factoryAddress').value.trim();
+    if(!factory){ alert('Enter Factory address first'); return; }
+    if(!signer){ alert('Connect a signer first'); return; }
+
+    const count = Math.max(1, Number(($('count').value||'1')));
+    const valueEth = $('valueEth').value || '0';
+    let valueWei; try{ valueWei = ethers.parseEther(String(valueEth)); }catch(e){ alert('Invalid ETH value'); return; }
+    const parallel = $('parallel').value === '1';
+    const delayMs = Number($('delayMs').value || 0);
+
+    appendLog(`Warping: ${count} orders — value ${valueEth} ETH — mode: ${parallel ? 'PARALLEL' : 'SEQUENTIAL'}`);
+
+    const start = Date.now();
+    if(parallel){
+      const promises = [];
+      for(let i=0;i<count;i++){
+        if(STOP) break;
+        promises.push((async (idx)=>{
+          const t0 = Date.now();
+          try{
+            const tx = await sendDeploy(factory, valueWei);
+            const receipt = await tx.wait();
+            const gasUsed = Number(receipt.gasUsed.toString());
+            const took = Date.now() - t0;
+            appendLog(`OK #${idx+1} tx=${receipt.transactionHash} gas=${gasUsed} time=${took}ms`);
+            results.push({ index: idx+1, ok:true, txHash: receipt.transactionHash, gasUsed, timeMs: took, timestamp: Date.now() });
+            updateMetrics();
+          }catch(err){
+            appendLog(`ERR #${idx+1} ${(err && err.message) ? err.message : String(err)}`);
+            results.push({ index: idx+1, ok:false, error: (err && err.message) || String(err), timeMs: Date.now() });
+            updateMetrics();
+          }
+        })(i));
+      }
+      await Promise.all(promises);
+    } else {
+      for(let i=0;i<count;i++){
+        if(STOP) break;
+        const t0 = Date.now();
+        try{
+          const tx = await sendDeploy(factory, valueWei);
+          const receipt = await tx.wait();
+          const gasUsed = Number(receipt.gasUsed.toString());
+          const took = Date.now() - t0;
+          appendLog(`OK #${i+1} tx=${receipt.transactionHash} gas=${gasUsed} time=${took}ms`);
+          results.push({ index: i+1, ok:true, txHash: receipt.transactionHash, gasUsed, timeMs: took, timestamp: Date.now() });
+          updateMetrics();
+        }catch(err){
+          appendLog(`ERR #${i+1} ${(err && err.message) ? err.message : String(err)}`);
+          results.push({ index: i+1, ok:false, error: (err && err.message) || String(err), timeMs: Date.now() });
+          updateMetrics();
+        }
+        if(delayMs) await new Promise(r=>setTimeout(r, delayMs));
+      }
+    }
+
+    const elapsed = Date.now() - start;
+    $('elapsed').textContent = elapsed + 'ms';
+    appendLog('Mission complete — elapsed ' + elapsed + 'ms');
+    stopBtn.disabled = true;
+  };
+
+  stopBtn.onclick = () => { STOP = true; appendLog('Abort requested'); stopBtn.disabled = true; };
+
+  function updateMetrics(){
+    const total = results.length;
+    const succ = results.filter(r=>r.ok).length;
+    const fail = total - succ;
+    const gas = results.filter(r=>r.ok).reduce((s,r)=> s + (r.gasUsed||0), 0);
+    $('m_total').textContent = total;
+    $('m_success').textContent = succ;
+    $('m_failed').textContent = fail;
+    $('m_gas').textContent = gas;
+    stopBtn.disabled = false;
+    tryUnlockBadge(succ);
+    updateProgressBar(succ);
+    persistProgress();
+  }
+
+  downloadCsv.onclick = () => {
+    if(results.length === 0){ alert('No results to download'); return; }
+    const header = ['index','ok','txHash','gasUsed','timeMs','timestamp','error'];
+    const rows = results.map(r => [ r.index, r.ok, r.txHash||'', r.gasUsed||'', r.timeMs||'', r.timestamp||'', r.error ? r.error.replace(/[\r\n]+/g,' ') : '' ]);
+    const csv = [header, ...rows].map(r => r.map(cell => '"' + String(cell).replace(/"/g,'""') + '"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'linea_voyage_benchmark.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Preload progress when factory field is edited & blurred
+  $('factoryAddress').addEventListener('blur', preloadBadgesIfPossible);
+})();
+</script>
+</body>
+</html>
