@@ -4,7 +4,12 @@
 >
 > *Linea Exponent is coming November 5th.*
 
+Linea just announced that BUILDERS will be rewarded.
+And guess what?
 
+👉 This DApp literally turns you into a builder.
+Deploy. Stress-test. Benchmark. Prove your contribution to ecosystem growth.
+On-chain. On Linea. Public. Measurable. 💥
 
 # 🚀 Linea Voyage — Mission Control
 
