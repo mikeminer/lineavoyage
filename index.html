@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Linea Voyage — Mission Control (Lite)</title>
+<title>Linea Voyage — Mission Control (Gated)</title>
 <style>
   :root{
     --space1:#06131a; --space2:#0b2430;
     --card:#0d2a33; --glass:rgba(255,255,255,0.04);
     --accent:#38e1e1; --accent2:#9ff6f6;
     --muted:#a9f0f0; --text:#eaffff;
+    --danger:#ff7b7b;
   }
   *{box-sizing:border-box}
   body{
@@ -38,6 +39,7 @@
   .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   button{ cursor:pointer; border:none; padding:10px 14px; border-radius:12px; font-weight:900; background:linear-gradient(180deg,var(--accent),#23c9c9); color:#042026; box-shadow:0 10px 30px rgba(35,201,201,0.25); }
   button.ghost{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.07); box-shadow:none; }
+  button[disabled]{ opacity:.45; cursor:not-allowed; filter:grayscale(.2); }
   .big{ padding:14px 18px; font-size:16px; border-radius:14px; }
   .log{ height:420px; overflow:auto; padding:12px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:13px; color:#dffbfb; }
   .metrics{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:12px; }
@@ -45,6 +47,13 @@
   .small{ font-size:12px; color:var(--muted); }
   .note{ font-size:12px; color:#c8ffff; margin-top:8px; }
   footer{ margin-top:12px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+
+  .banner{
+    padding:10px 12px; border-radius:10px; margin-bottom:12px; display:flex; gap:12px; align-items:center;
+    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03);
+  }
+  .banner.warn{ border-color: rgba(255,123,123,0.18); background: linear-gradient(90deg, rgba(255,123,123,0.04), rgba(255,255,255,0.01)); }
+  .banner a{ color:var(--accent2); font-weight:800; text-decoration:underline; }
 
   /* Progress bar + rocket */
   .progressWrap{ margin:10px 0 6px; background:var(--glass); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:8px; }
@@ -64,14 +73,16 @@
         <div class="logo">LV</div>
         <div>
           <h1>Linea Voyage — Mission Control</h1>
-          <div class="tagline">Exploring cryptospace with cheerful benchmarks and cosmic cocktails 🚀🪐</div>
+          <div class="tagline">Exploration gated by The Citadel Spaceship NFT 🛸</div>
         </div>
       </div>
       <div class="top-actions">
         <div class="pill">Theme: Linea Voyage</div>
-        <div class="pill">Mode: Private Testnet / Linea</div>
+        <div class="pill">Gated by: The Citadel Spaceship (Base)</div>
       </div>
     </header>
+
+    <div id="accessBanner" class="banner" style="display:none"></div>
 
     <div class="content">
       <!-- Left: controls -->
@@ -120,9 +131,9 @@
 
         <div class="row" style="margin-top:8px">
           <button id="connectBtn">Connect</button>
-          <button id="startBtn" class="ghost big">Launch Sequence</button>
+          <button id="startBtn" class="ghost big" disabled>Launch Sequence</button>
           <button id="stopBtn" class="ghost" disabled>Abort</button>
-          <button id="downloadCsv" class="ghost">Download CSV</button>
+          <button id="downloadCsv" class="ghost" disabled>Download CSV</button>
         </div>
 
         <div class="note">⚠️ Use on infrastructure you control. This triggers <code>deployChild()</code> on your Factory and forwards ETH if set — it does <b>not</b> auto-replicate on-chain.</div>
@@ -169,29 +180,34 @@
     </div>
 
     <footer>
-      <div>© Linea Voyage — Mission Control (Lite) • For private testing & research</div>
-      <div class="small">ABI expects <code>deployChild()</code> payable.</div>
+      <div>© Linea Voyage — Mission Control (Gated) • For private testing & research</div>
+      <div class="small">Gating NFT: <code>0x67e2f3a9b7fe9979e3b4a5e557b59e9c93331c4f</code> on Base.</div>
     </footer>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 <script>
 (function(){
+  const NFT_ADDRESS = "0x67e2f3a9b7fe9979e3b4a5e557b59e9c93331c4f".toLowerCase();
+  const OPENSEA_URL = "https://opensea.io/collection/0x0df998573b34a1a2932998a8376052f230ef8e92/overview";
+  const BASE_RPC = "https://mainnet.base.org"; // read-only provider for ownership checks (public)
+  const FACTORY_PREFILL = "0x5cbf834Ba1e687560ce0564d684cd8Ecd5373B72";
+
   const $ = id => document.getElementById(id);
   const connectBtn = $('connectBtn'), startBtn = $('startBtn'), stopBtn = $('stopBtn'), downloadCsv = $('downloadCsv');
-  const logEl = $('log'), connectedEl = $('connected'), accountEl = $('account');
+  const logEl = $('log'), connectedEl = $('connected'), accountEl = $('account'), banner = $('accessBanner');
 
   let provider, signer, walletAddress = null;
+  let baseReadProvider = new ethers.JsonRpcProvider(BASE_RPC);
   let STOP = false;
   let results = [];
 
-  // Prefill your Linea Factory address (edit if needed)
+  // Prefill factory
   window.addEventListener('DOMContentLoaded', ()=>{
-    const addr = "0x5cbf834Ba1e687560ce0564d684cd8Ecd5373B72";
-    const el = $('factoryAddress'); if(el && !el.value) el.value = addr;
+    const el = $('factoryAddress'); if(el && !el.value) el.value = FACTORY_PREFILL;
+    // Initially buttons disabled until connect & ownership check
+    setAccess(false);
   });
-
-  $('signerMode').addEventListener('change', ()=>{ $('privateKey').style.display = $('signerMode').value === 'pk' ? 'block' : 'none'; });
 
   function appendLog(msg){
     const el = document.createElement('div');
@@ -200,11 +216,47 @@
   }
   function setConnected(ok, addr){ connectedEl.textContent = ok ? 'Yes' : 'No'; accountEl.textContent = addr || '—'; }
 
+  function setAccess(allowed, detailsText){
+    startBtn.disabled = !allowed;
+    downloadCsv.disabled = !allowed;
+    stopBtn.disabled = !allowed;
+    if(!allowed){
+      banner.style.display = 'flex';
+      banner.className = 'banner warn';
+      banner.innerHTML = `<div style="flex:1">Access locked — you must hold <strong>The Citadel Spaceship</strong> NFT on Base to use this dApp.</div>
+                          <div><a id="openseaLink" href="${OPENSEA_URL}" target="_blank" rel="noopener">Buy a ship on OpenSea ↗</a></div>`;
+      // make the (disabled) start button open opensea as helpful shortcut:
+      startBtn.onclick = () => { window.open(OPENSEA_URL, '_blank'); };
+      downloadCsv.onclick = () => { alert('Download disabled: you need the gating NFT.'); };
+      stopBtn.onclick = () => { appendLog('Abort disabled: no access.'); };
+    } else {
+      banner.style.display = 'none';
+      startBtn.onclick = startSequence; // bind actual function defined later
+      // downloadCSV kept as originally implemented below
+      downloadCsv.onclick = downloadCsvHandler;
+      stopBtn.onclick = () => { STOP = true; appendLog('Abort requested'); stopBtn.disabled = true; };
+    }
+  }
+
   async function assertLinea(p){
     try{
       const net = await p.getNetwork();
       if (net.chainId !== 59144n) throw new Error("Please switch to Linea (chainId 59144).");
     }catch(e){ throw e; }
+  }
+
+  // Check ERC-721 ownership on Base via a read-only provider (no wallet network switching)
+  async function checkOwnershipOnBase(addr){
+    try{
+      if(!addr) return false;
+      const erc721 = new ethers.Contract(NFT_ADDRESS, ['function balanceOf(address) view returns (uint256)'], baseReadProvider);
+      const bal = await erc721.balanceOf(addr);
+      const n = Number(bal.toString ? bal.toString() : bal);
+      return n > 0;
+    }catch(e){
+      console.warn('Ownership check failed:', e);
+      return false;
+    }
   }
 
   connectBtn.onclick = async () => {
@@ -214,6 +266,7 @@
         if(!window.ethereum) throw new Error('No provider in window.ethereum — install MetaMask or Rabby');
         provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send('eth_requestAccounts', []);
+        // don't force chain switching for wallet; we assert Linea only for tx sending
         await assertLinea(provider);
         signer = await provider.getSigner();
         walletAddress = await signer.getAddress();
@@ -224,28 +277,55 @@
         const pk = $('privateKey').value.trim();
         if(!rpc) throw new Error('Please provide RPC URL for Private Key mode');
         if(!pk) throw new Error('Please provide a private key (local testing only)');
-        provider = new ethers.StaticJsonRpcProvider(rpc);
+        provider = new ethers.JsonRpcProvider(rpc);
+        // optionally enforce Linea: await assertLinea(provider);
         signer = new ethers.Wallet(pk, provider);
         walletAddress = await signer.getAddress();
         setConnected(true, walletAddress);
         appendLog('Connected via Private Key: ' + walletAddress + ' @ ' + rpc);
       }
-      updateProgressBar(0); // session starts at 0
+
+      // ownership check on Base (read-only)
+      appendLog('Checking gating NFT ownership on Base...');
+      const has = await checkOwnershipOnBase(walletAddress);
+      if(has){
+        appendLog('Ownership confirmed — access granted.');
+        setAccess(true);
+      } else {
+        appendLog('No gating NFT found — access locked. Redirecting users to Opensea link is available.');
+        setAccess(false);
+      }
+
+      // set session progress to 0 on connect
+      updateProgressBar(0);
     } catch(e){
       appendLog('Connection error: ' + (e.message || e));
       setConnected(false, null);
+      setAccess(false);
     }
   };
 
-  const FACTORY_ABI = [
-    'function deployChild() external payable returns (address)'
-  ];
+  // ---- Factory ABI & tx logic ----
+  const FACTORY_ABI = ['function deployChild() external payable returns (address)'];
 
   async function sendDeploy(factoryAddr, valueWei){
     const contract = new ethers.Contract(factoryAddr, FACTORY_ABI, signer);
     return await contract.deployChild({ value: valueWei });
   }
 
+  // helper: download CSV (bound to button when access granted)
+  function downloadCsvHandler(){
+    if(results.length === 0){ alert('No results to download'); return; }
+    const header = ['index','ok','txHash','gasUsed','timeMs','timestamp','error'];
+    const rows = results.map(r => [ r.index, r.ok, r.txHash||'', r.gasUsed||'', r.timeMs||'', r.timestamp||'', r.error ? r.error.replace(/[\r\n]+/g,' ') : '' ]);
+    const csv = [header, ...rows].map(r => r.map(cell => '"' + String(cell).replace(/"/g,'""') + '"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'linea_voyage_benchmark.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // progress UI
   function updateProgressBar(successCount){
     const pb = $('progressBar');
     const pt = $('progressText');
@@ -264,8 +344,8 @@
     hint.textContent = `New tier every 50 successful orders. Current session: ${successCount}.`;
   }
 
-  // Main runner
-  startBtn.onclick = async () => {
+  // main runner (extracted so we can rebind startBtn only when allowed)
+  async function startSequence(){
     STOP = false;
     results = [];
     $('m_total').textContent = '0'; $('m_success').textContent = '0'; $('m_failed').textContent = '0'; $('m_gas').textContent = '0';
@@ -295,8 +375,8 @@
             const receipt = await tx.wait();
             const gasUsed = Number(receipt.gasUsed.toString());
             const took = Date.now() - t0;
-            appendLog(`OK #${idx+1} tx=${receipt.transactionHash} gas=${gasUsed} time=${took}ms`);
-            results.push({ index: idx+1, ok:true, txHash: receipt.transactionHash, gasUsed, timeMs: took, timestamp: Date.now() });
+            appendLog(`OK #${idx+1} tx=${receipt.hash} gas=${gasUsed} time=${took}ms`);
+            results.push({ index: idx+1, ok:true, txHash: receipt.hash, gasUsed, timeMs: took, timestamp: Date.now() });
             updateMetrics();
           }catch(err){
             appendLog(`ERR #${idx+1} ${(err && err.message) ? err.message : String(err)}`);
@@ -315,8 +395,8 @@
           const receipt = await tx.wait();
           const gasUsed = Number(receipt.gasUsed.toString());
           const took = Date.now() - t0;
-          appendLog(`OK #${i+1} tx=${receipt.transactionHash} gas=${gasUsed} time=${took}ms`);
-          results.push({ index: i+1, ok:true, txHash: receipt.transactionHash, gasUsed, timeMs: took, timestamp: Date.now() });
+          appendLog(`OK #${i+1} tx=${receipt.hash} gas=${gasUsed} time=${took}ms`);
+          results.push({ index: i+1, ok:true, txHash: receipt.hash, gasUsed, timeMs: took, timestamp: Date.now() });
           updateMetrics();
         }catch(err){
           appendLog(`ERR #${i+1} ${(err && err.message) ? err.message : String(err)}`);
@@ -331,9 +411,7 @@
     $('elapsed').textContent = elapsed + 'ms';
     appendLog('Mission complete — elapsed ' + elapsed + 'ms');
     stopBtn.disabled = true;
-  };
-
-  stopBtn.onclick = () => { STOP = true; appendLog('Abort requested'); stopBtn.disabled = true; };
+  }
 
   function updateMetrics(){
     const total = results.length;
@@ -348,16 +426,10 @@
     updateProgressBar(succ);
   }
 
-  downloadCsv.onclick = () => {
-    if(results.length === 0){ alert('No results to download'); return; }
-    const header = ['index','ok','txHash','gasUsed','timeMs','timestamp','error'];
-    const rows = results.map(r => [ r.index, r.ok, r.txHash||'', r.gasUsed||'', r.timeMs||'', r.timestamp||'', r.error ? r.error.replace(/[\r\n]+/g,' ') : '' ]);
-    const csv = [header, ...rows].map(r => r.map(cell => '"' + String(cell).replace(/"/g,'""') + '"').join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'linea_voyage_benchmark.csv'; a.click();
-    URL.revokeObjectURL(url);
-  };
+  // initially bind a friendly handler so button doesn't throw
+  startBtn.onclick = () => { alert('Connect and hold The Citadel Spaceship NFT on Base to unlock this feature.'); };
+  downloadCsv.onclick = () => { alert('Connect and hold The Citadel Spaceship NFT on Base to unlock this feature.'); };
+
 })();
 </script>
 </body>
