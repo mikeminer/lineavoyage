@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Linea Voyage — Mission Control</title>
+<title>Linea Voyage — Mission Control (Lite)</title>
 <style>
   :root{
     --space1:#06131a; --space2:#0b2430;
@@ -45,27 +45,6 @@
   .small{ font-size:12px; color:var(--muted); }
   .note{ font-size:12px; color:#c8ffff; margin-top:8px; }
   footer{ margin-top:12px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-
-  /* Badge dock */
-  .badgeDock{ position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column; gap:10px; z-index:9999; }
-  .badge{
-    background:linear-gradient(180deg, rgba(56,225,225,.22), rgba(0,0,0,.35));
-    border:1px solid rgba(56,225,225,.45);
-    color:#eaffff; padding:10px 14px; border-radius:14px; min-width:260px;
-    box-shadow:0 10px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
-    animation:popIn .5s ease, fadeOut 6.5s ease 4.5s forwards;
-    backdrop-filter: blur(8px);
-  }
-  .badge .title{ font-weight:900; letter-spacing:.3px; margin-bottom:4px; color:#9ff6f6; }
-  .badge .msg{ font-size:13px; color:#c8ffff; }
-  @keyframes popIn{ from{ transform: translateY(12px) scale(.98); opacity:0 } to{ transform: translateY(0) scale(1); opacity:1 } }
-  @keyframes fadeOut{ to{ opacity:0; transform: translateY(6px) } }
-
-  /* Confetti starburst */
-  .confetti{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:9998; }
-  .confetti .star{ position:absolute; font-size:14px; color:#9ff6f6; opacity:0.95; will-change: transform, opacity; animation: fall 1200ms ease-out forwards, spin 1200ms linear forwards; }
-  @keyframes fall{ from{ transform: translate(var(--x), var(--y)) scale(1) } to{ transform: translate(var(--tx), var(--ty)) scale(0.9); opacity:0 } }
-  @keyframes spin{ from{ rotate:0deg } to{ rotate:360deg } }
 
   /* Progress bar + rocket */
   .progressWrap{ margin:10px 0 6px; background:var(--glass); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:8px; }
@@ -162,17 +141,17 @@
         <div style="height:8px"></div>
         <div class="log" id="log" aria-live="polite"></div>
 
-        <!-- Progress to next badge -->
+        <!-- Progress bar -->
         <div class="progressWrap" id="progressWrap">
           <div class="progressLabel">
-            <span>Next badge progress</span>
+            <span>Session progress (toward 50)</span>
             <span id="progressText">0 / 50</span>
           </div>
           <div class="progressTrack">
             <div class="progressBar" id="progressBar"></div>
             <div class="progressRocket" id="progressRocket">🚀</div>
           </div>
-          <div class="progressHint" id="progressHint">Earn a new rank every 50 successful orders. Warp speed ahead!</div>
+          <div class="progressHint" id="progressHint">New tier every 50 successful orders. Warp speed ahead!</div>
         </div>
 
         <div class="metrics">
@@ -190,13 +169,10 @@
     </div>
 
     <footer>
-      <div>© Linea Voyage — Mission Control • For private testing & research</div>
-      <div class="small">Events power badges & persistence. ABI expects <code>deployChild()</code> payable.</div>
+      <div>© Linea Voyage — Mission Control (Lite) • For private testing & research</div>
+      <div class="small">ABI expects <code>deployChild()</code> payable.</div>
     </footer>
   </div>
-
-  <!-- Badge Dock -->
-  <div id="badgeDock" class="badgeDock" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 <script>
@@ -209,38 +185,12 @@
   let STOP = false;
   let results = [];
 
-  // --- Badges config declared EARLY ---
-  const BADGES = [
-    { title:'CAPTAIN OF THE VOID', emoji:'🪐👨‍🚀', msg:'Every tx is a tiny step for gas, but a giant leap for your private chain.' },
-    { title:'WARP NAVIGATOR', emoji:'🚀🧭', msg:'You bent spacetime and the mempool said “nice.”' },
-    { title:'SEQUENCER SORCERER', emoji:'✨⚙️', msg:'Blocks obey your will. Mostly.' },
-    { title:'THRUST MASTER', emoji:'🛸🔥', msg:'More throughput than a caffeine-fueled validator.' },
-    { title:'COSMIC OPTIMIZER', emoji:'🌌🛠️', msg:'You turned gas into stardust-efficient art.' },
-    { title:'GRAVITY BREAKER', emoji:'🛰️🪄', msg:'Latency bowed. Inclusion rose. You prevailed.' },
-    { title:'ASTRO ARCHITECT', emoji:'🏗️🪐', msg:'Contracts align like constellations of code.' },
-    { title:'NEBULA NAV', emoji:'☁️🧮', msg:'Through clouds of transactions, you kept course.' },
-    { title:'QUANTUM TIPSTER', emoji:'🔬💸', msg:'Heisenberg called—your tips changed the outcome.' },
-    { title:'VOYAGE LEGEND', emoji:'🏴‍☠️⭐', msg:'From L1 myths to L2 glory. You made history.' }
-  ];
-  const milestonesShown = new Set();
-
-  // --- ABI & TOPIC declared EARLIEST to avoid TDZ anywhere ---
-  const FACTORY_ABI = [
-    'function deployChild() external payable returns (address)',
-    'event ChildDeployed(address indexed deployer, address child, uint256 value)'
-  ];
-  const IFACE = new ethers.Interface(FACTORY_ABI);
-  const EV = IFACE.getEvent("ChildDeployed");
-  const TOPIC_CHILD_DEPLOYED = IFACE.getEventTopic(EV);
-
-  // Prefill your Linea Factory address
+  // Prefill your Linea Factory address (edit if needed)
   window.addEventListener('DOMContentLoaded', ()=>{
     const addr = "0x5cbf834Ba1e687560ce0564d684cd8Ecd5373B72";
-    const el = $('factoryAddress');
-    if(el && !el.value) el.value = addr;
+    const el = $('factoryAddress'); if(el && !el.value) el.value = addr;
   });
 
-  // Toggle private key field
   $('signerMode').addEventListener('change', ()=>{ $('privateKey').style.display = $('signerMode').value === 'pk' ? 'block' : 'none'; });
 
   function appendLog(msg){
@@ -275,130 +225,25 @@
         if(!rpc) throw new Error('Please provide RPC URL for Private Key mode');
         if(!pk) throw new Error('Please provide a private key (local testing only)');
         provider = new ethers.StaticJsonRpcProvider(rpc);
-        // await assertLinea(provider); // enable if you want to enforce Linea here too
         signer = new ethers.Wallet(pk, provider);
         walletAddress = await signer.getAddress();
         setConnected(true, walletAddress);
         appendLog('Connected via Private Key: ' + walletAddress + ' @ ' + rpc);
       }
-      await preloadBadgesIfPossible();
-      updateProgressBar( getSavedProgress() );
+      updateProgressBar(0); // session starts at 0
     } catch(e){
       appendLog('Connection error: ' + (e.message || e));
       setConnected(false, null);
     }
   };
 
+  const FACTORY_ABI = [
+    'function deployChild() external payable returns (address)'
+  ];
+
   async function sendDeploy(factoryAddr, valueWei){
     const contract = new ethers.Contract(factoryAddr, FACTORY_ABI, signer);
     return await contract.deployChild({ value: valueWei });
-  }
-
-  function showBadge(title, msg){
-    const dock = document.getElementById('badgeDock');
-    if(!dock) return;
-    const el = document.createElement('div');
-    el.className = 'badge';
-    el.innerHTML = `<div class="title">${title}</div><div class="msg">${msg}</div>`;
-    dock.appendChild(el);
-    setTimeout(()=>{ try{ dock.removeChild(el); }catch(_){} }, 8000);
-  }
-  function confettiBurst(){
-    const layer = document.createElement('div');
-    layer.className = 'confetti';
-    document.body.appendChild(layer);
-    const N = 60;
-    const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-    const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-    for(let i=0;i<N;i++){
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.textContent = '✦';
-      const x = (vw/2); const y = (vh - 80);
-      const angle = (Math.PI * 2) * (i / N);
-      const dist = 120 + Math.random()*220;
-      const tx = x + Math.cos(angle) * dist;
-      const ty = y - Math.sin(angle) * dist - (Math.random()*80);
-      star.style.setProperty('--x', x+'px');
-      star.style.setProperty('--y', y+'px');
-      star.style.setProperty('--tx', tx+'px');
-      star.style.setProperty('--ty', ty+'px');
-      star.style.left = x+'px';
-      star.style.top = y+'px';
-      star.style.fontSize = (12 + Math.random()*10)+'px';
-      layer.appendChild(star);
-    }
-    setTimeout(()=>{ try{ document.body.removeChild(layer); }catch(_){} }, 1300);
-  }
-
-  function storageKey(factory, addr){ return `lv_badges_${(factory||'').toLowerCase()}_${(addr||'').toLowerCase()}`; }
-  function getSavedProgress(){
-    try{
-      const factory = $('factoryAddress').value.trim();
-      if(!factory || !walletAddress) return 0;
-      const key = storageKey(factory, walletAddress);
-      const saved = JSON.parse(localStorage.getItem(key) || '0');
-      return Number.isFinite(saved) ? saved : 0;
-    }catch(_){ return 0; }
-  }
-  function persistProgress(){
-    try{
-      const factory = $('factoryAddress').value.trim();
-      if(!factory || !walletAddress) return;
-      const succ = results.filter(r=>r.ok).length;
-      const key = storageKey(factory, walletAddress);
-      const current = JSON.parse(localStorage.getItem(key) || '0');
-      const base = Number.isFinite(current) ? current : 0;
-      const best = Math.max(base, succ);
-      localStorage.setItem(key, JSON.stringify(best));
-    }catch(_){}
-  }
-
-  async function preloadBadgesIfPossible(){
-    try{
-      const factory = $('factoryAddress').value.trim();
-      if(!factory || !walletAddress || !provider) return;
-
-      // Safety: recompute topic if not present for any reason
-      const topicEmitted = (typeof TOPIC_CHILD_DEPLOYED !== 'undefined' && TOPIC_CHILD_DEPLOYED)
-        ? TOPIC_CHILD_DEPLOYED
-        : (new ethers.Interface(FACTORY_ABI)).getEventTopic((new ethers.Interface(FACTORY_ABI)).getEvent("ChildDeployed"));
-
-      let best = 0;
-      try{
-        const key = storageKey(factory, walletAddress);
-        const saved = JSON.parse(localStorage.getItem(key) || '0');
-        if(Number.isFinite(saved)) best = saved;
-      }catch(_){}
-
-      const topic1 = ethers.zeroPadValue(walletAddress, 32);
-      const logs = await provider.getLogs({ address: factory, fromBlock: 0, toBlock: 'latest', topics: [topicEmitted, topic1] });
-      const historical = logs.length;
-      const totalSucc = Math.max(best, historical);
-
-      for(let m=1; m<=10; m++){
-        if(totalSucc >= m*50) milestonesShown.add(m);
-      }
-
-      const key = storageKey(factory, walletAddress);
-      localStorage.setItem(key, JSON.stringify(totalSucc));
-
-      if(totalSucc >= 50){
-        showBadge('🛰️ Progress Restored', `Detected ${totalSucc} successful orders — badges synced.`);
-      }
-    }catch(e){ appendLog('Preload badges failed: ' + (e.message||e)); }
-  }
-
-  function tryUnlockBadge(successCount){
-    if(successCount === 0) return;
-    const milestone = Math.floor(successCount / 50);
-    if(milestone >= 1 && milestone <= 10 && successCount % 50 === 0 && !milestonesShown.has(milestone)){
-      milestonesShown.add(milestone);
-      const b = BADGES[milestone-1] || BADGES[BADGES.length-1];
-      showBadge(`${b.emoji} ${b.title}`, b.msg);
-      confettiBurst();
-      persistProgress();
-    }
   }
 
   function updateProgressBar(successCount){
@@ -408,7 +253,6 @@
     const rocket = $('progressRocket');
     if(!pb || !pt) return;
     const cap = 50;
-    const cycles = Math.floor(successCount / cap);
     const within = successCount % cap;
     const pct = Math.min(100, Math.round((within / cap) * 100));
     pb.style.width = pct + '%';
@@ -417,13 +261,7 @@
       const offsetPx = 10;
       rocket.style.left = `calc(${pct}% - ${offsetPx}px)`;
     }
-    const maxBadges = BADGES.length * cap; // 500
-    if(successCount >= maxBadges){
-      hint.textContent = "Max rank achieved — you’re a Voyage Legend!";
-    } else {
-      const nextTitle = BADGES[Math.min(cycles, BADGES.length-1)].title;
-      hint.textContent = `Next up: ${nextTitle} at ${(cycles+1)*cap} successes.`;
-    }
+    hint.textContent = `New tier every 50 successful orders. Current session: ${successCount}.`;
   }
 
   // Main runner
@@ -431,7 +269,7 @@
     STOP = false;
     results = [];
     $('m_total').textContent = '0'; $('m_success').textContent = '0'; $('m_failed').textContent = '0'; $('m_gas').textContent = '0';
-    updateProgressBar( getSavedProgress() );
+    updateProgressBar(0);
 
     const factory = $('factoryAddress').value.trim();
     if(!factory){ alert('Enter Factory address first'); return; }
@@ -507,9 +345,7 @@
     $('m_failed').textContent = fail;
     $('m_gas').textContent = gas;
     stopBtn.disabled = false;
-    tryUnlockBadge(succ);
     updateProgressBar(succ);
-    persistProgress();
   }
 
   downloadCsv.onclick = () => {
@@ -522,9 +358,6 @@
     const a = document.createElement('a'); a.href = url; a.download = 'linea_voyage_benchmark.csv'; a.click();
     URL.revokeObjectURL(url);
   };
-
-  // Preload progress when factory field is edited & blurred
-  $('factoryAddress').addEventListener('blur', preloadBadgesIfPossible);
 })();
 </script>
 </body>
