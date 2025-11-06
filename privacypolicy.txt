@@ -1,0 +1,105 @@
+Last updated: 06/11/2025
+
+This Privacy Policy explains how On-Chain Membership dApp (“we”, “us”, “our”) handles information when you access and use our decentralized application (“dApp”).
+
+By accessing or using our dApp, you agree to this Privacy Policy.
+
+1. Information We Collect
+
+We do not collect personal data such as names, email addresses, phone numbers, home addresses, or identification documents.
+
+However, due to how blockchain technology functions, the following information may be publicly visible:
+
+Public wallet addresses
+
+On-chain transaction data
+
+NFTs or tokens you mint, hold, transfer, or interact with
+
+Smart contract interactions and metadata
+
+This information is stored on public blockchains and cannot be modified or deleted by us.
+
+2. Optional Data You Provide
+
+If you voluntarily contact us through email, social platforms, or support forms, we may temporarily store:
+
+Contact information (e.g., username or email)
+
+The content of your messages
+
+We will only use this information to respond to you.
+
+3. Cookies & Web Analytics
+
+Our dApp may use limited analytics tools or cookies to improve user experience, including:
+
+Performance analytics
+
+Browser and device data (non-identifying)
+
+Third-party services may also collect data through embedded components such as:
+
+Wallet providers (e.g., MetaMask, WalletConnect)
+
+NFT marketplaces (e.g., OpenSea)
+
+Blockchain networks (e.g., Linea, Ethereum)
+
+These services operate under their own policies. We do not control or store their data.
+
+4. How We Use Information
+
+We use on-chain and technical information to:
+
+Enable blockchain interaction features
+
+Track mission completion and progression
+
+Provide wallet-based membership utility
+
+Improve performance and user experience
+
+Detect suspicious or harmful activities
+
+We never sell, rent, or commercialize your data.
+
+5. Security
+
+We apply appropriate security measures to protect system integrity.
+However, blockchain networks operate independently from us, and:
+
+Transactions are irreversible
+
+Smart contracts may carry technological risks
+
+Use blockchain systems responsibly and at your own discretion.
+
+6. Data Retention
+
+Since blockchain is public and immutable:
+
+On-chain data cannot be deleted
+
+Technical analytics may be deleted after operational use
+
+You may disconnect your wallet at any time to stop using the service.
+
+7. Children’s Privacy
+
+Our dApp is not intended for users under 18.
+We do not knowingly collect data from minors.
+
+8. Changes to This Policy
+
+We may update this Privacy Policy from time to time.
+The “Last updated” date will reflect the most recent version.
+
+Continued use of the dApp after updates implies acceptance of the revised terms.
+
+9. Contact
+
+For questions about this Privacy Policy:
+
+📩 Email: mikforlani@gmail.com
+🌐 Website: https://mikeminer.github.io/lineavoyage/
