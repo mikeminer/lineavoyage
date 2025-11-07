@@ -11,7 +11,7 @@ And guess what?
 Deploy. Stress-test. Benchmark. Prove your contribution to ecosystem growth.
 On-chain. On Linea. Public. Measurable. 💥
 
-# 🚀 Linea Voyage — Mission Control
+# 🚀 Linea Voyage — Mission Control by pappardelle.linea.eth
 
 **Linea Voyage – Mission Control** is a fun and cosmic-themed **deployment benchmark DApp** designed to test the throughput and stability of private EVM networks and Linea-like environments.
 
