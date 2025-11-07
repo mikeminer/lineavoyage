@@ -17,7 +17,7 @@ On-chain. On Linea. Public. Measurable. 💥
 
 Launch “warp orders”, watch your metrics update live, and log every transaction in the mission console.  
 Because sometimes… benchmarking needs a bit of space magic. 🪐✨
-Please note: to mKe it work you must to own a specific Base Mainnet NFT described below and after connecting to the Voyage dapp you must to switch MANUALLY your network to Linea Mainnet
+# Please note: to mKe it work you must to own a specific Base Mainnet NFT described below and after connecting to the Voyage dapp you must to switch MANUALLY your network to Linea Mainnet
 
 🔗 Live DApp: https://mikeminer.github.io/lineavoyage/  
 🛠 Powered by: JavaScript + ethers v6 + MetaMask / RPC signer  
